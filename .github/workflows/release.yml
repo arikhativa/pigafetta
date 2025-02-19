@@ -1,0 +1,62 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - main  # Triggers the workflow on every push to the main branch
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build project
+        run: yarn run build
+
+      - name: Compress
+        run: zip -r asset.zip .output
+
+      - name: Delete existing release
+        run: |
+          gh release delete test -y || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete existing tag
+        run: |
+          git tag -d test || true
+          git push origin :refs/tags/test || true
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: test
+          release_name: test
+          body: |
+            Release notes for test
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./asset.zip
+          asset_name: asset.zip
+          asset_content_type: application/zip
