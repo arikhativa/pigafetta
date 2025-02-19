@@ -1,13 +1,22 @@
 #!/bin/bash
 
-# Check if the repository path is provided
+LOG_FILE="/tmp/pull.log"
+
+log() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
+}
+
 if [ -z "$1" ]; then
-  echo "Usage: $0 <repository-path>"
+  log "Usage: $0 <repository-path>"
   exit 1
 fi
 
-# Navigate to the repository
-cd "$1" || { echo "Repository not found: $1"; exit 1; }
+cd "$1" || { log "Repository not found: $1"; exit 1; }
 
-# Run git pull
-git pull
+log "Starting git fetch"
+git fetch >> "$LOG_FILE" 2>&1
+
+log "Starting git reset"
+git reset --hard origin/$(git rev-parse --abbrev-ref HEAD)
+
+log "Pull completed successfully"
